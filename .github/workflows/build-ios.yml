@@ -1,0 +1,52 @@
+name: Compilar app iPhone
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Xcode 26 · iOS Simulator
+    runs-on: macos-26
+    timeout-minutes: 20
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Compilar proyecto
+        run: ./scripts/build_ci.sh
+
+      - name: Empaquetar app del simulador
+        if: success()
+        run: |
+          APP_PATH=$(find "$RUNNER_TEMP/AlarmaFuturaDerivedData/Build/Products" -maxdepth 3 -name 'AlarmaFutura.app' -print -quit)
+          test -n "$APP_PATH"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" AlarmaFutura-simulator.zip
+
+      - name: Guardar registro de compilación
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: registro-xcode-${{ github.run_number }}
+          path: xcodebuild.log
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Guardar app compilada para simulador
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AlarmaFutura-simulator-${{ github.run_number }}
+          path: AlarmaFutura-simulator.zip
+          if-no-files-found: error
+          retention-days: 14
