@@ -94,6 +94,7 @@
 					A50000000000000000000001 = {
 						CreatedOnToolsVersion = 26.5;
 					};
+				};
 			};
 			buildConfigurationList = A90000000000000000000001 /* Build configuration list for PBXProject "AlarmaFutura" */;
 			compatibilityVersion = "Xcode 16.0";
