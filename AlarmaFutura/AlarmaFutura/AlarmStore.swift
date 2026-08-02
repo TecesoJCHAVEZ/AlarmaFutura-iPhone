@@ -10,7 +10,6 @@ nonisolated struct EmptyAlarmMetadata: AlarmMetadata { }
 final class AlarmStore: ObservableObject {
     @Published private(set) var alarms: [SavedAlarm] = []
 
-    private let alarmManager = AlarmManager.shared
     private let storageKey = "savedAlarms"
 
     init() {
@@ -57,7 +56,10 @@ final class AlarmStore: ObservableObject {
             attributes: attributes
         )
 
-        try await alarmManager.schedule(id: id, configuration: configuration)
+        _ = try await AlarmManager.shared.schedule(
+            id: id,
+            configuration: configuration
+        )
 
         alarms.append(
             SavedAlarm(id: id, name: cleanName, fireDate: fireDate)
@@ -66,17 +68,17 @@ final class AlarmStore: ObservableObject {
     }
 
     func cancelAlarm(_ alarm: SavedAlarm) throws {
-        try alarmManager.cancel(id: alarm.id)
+        try AlarmManager.shared.cancel(id: alarm.id)
         alarms.removeAll { $0.id == alarm.id }
         saveAlarms()
     }
 
     private func requestAuthorizationIfNeeded() async throws -> Bool {
-        switch alarmManager.authorizationState {
+        switch AlarmManager.shared.authorizationState {
         case .authorized:
             return true
         case .notDetermined:
-            let newState = try await alarmManager.requestAuthorization()
+            let newState = try await AlarmManager.shared.requestAuthorization()
             return newState == .authorized
         case .denied:
             return false
