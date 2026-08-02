@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Compilar proyecto
-        run: ./scripts/build_ci.sh
+        run: bash ./scripts/build_ci.sh
 
       - name: Empaquetar app del simulador
         if: success()
