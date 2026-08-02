@@ -1,0 +1,13 @@
+./.github/workflows/build-ios.yml
+./.gitignore
+./AlarmaFutura/AlarmaFutura.xcodeproj/project.pbxproj
+./AlarmaFutura/AlarmaFutura/AlarmModel.swift
+./AlarmaFutura/AlarmaFutura/AlarmStore.swift
+./AlarmaFutura/AlarmaFutura/AlarmaFuturaApp.swift
+./AlarmaFutura/AlarmaFutura/ContentView.swift
+./CLAUDE.md
+./INVENTARIO.txt
+./NOTAS_TECNICAS.md
+./README.md
+./docs/PROMPT_PARA_CLAUDE.md
+./scripts/build_ci.sh
