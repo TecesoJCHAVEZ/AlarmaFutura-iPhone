@@ -1,0 +1,51 @@
+name: iPhone · archivo Release sin firma
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-device-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  archive:
+    runs-on: macos-26
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Mostrar entorno
+        run: xcodebuild -version
+      - name: Compilar Release para iPhone físico sin firma
+        run: |
+          set -euo pipefail
+          xcodebuild -project AlarmaFutura/AlarmaFutura.xcodeproj \
+            -scheme AlarmaFutura \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/AlarmaFutura.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            archive 2>&1 | tee xcodebuild-iphone-release.log
+          test -d "$RUNNER_TEMP/AlarmaFutura.xcarchive"
+          ditto -c -k --keepParent "$RUNNER_TEMP/AlarmaFutura.xcarchive" AlarmaFutura-iphone-release-sin-firma.zip
+      - name: Guardar archivo iPhone (requiere firma para instalar)
+        uses: actions/upload-artifact@v4
+        with:
+          name: iphone-release-xcarchive-sin-firma
+          path: AlarmaFutura-iphone-release-sin-firma.zip
+          retention-days: 7
+      - name: Guardar registro Xcode
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: iphone-release-log
+          path: xcodebuild-iphone-release.log
+          if-no-files-found: ignore
+          retention-days: 7
