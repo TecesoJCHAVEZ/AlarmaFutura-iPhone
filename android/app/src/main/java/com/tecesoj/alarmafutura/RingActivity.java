@@ -3,6 +3,8 @@ package com.tecesoj.alarmafutura;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Build;
+import android.view.WindowManager;
 import android.view.Gravity;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -13,8 +15,13 @@ public class RingActivity extends Activity {
     @Override
     public void onCreate(Bundle state) {
         super.onCreate(state);
-        setShowWhenLocked(true);
-        setTurnScreenOn(true);
+        if (Build.VERSION.SDK_INT >= 27) {
+            setShowWhenLocked(true);
+            setTurnScreenOn(true);
+        } else {
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+                    | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+        }
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
