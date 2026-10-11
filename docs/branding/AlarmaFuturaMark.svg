@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <g fill="none" stroke="#0A7EF5" stroke-width="24" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M118 78H338"/>
+    <path d="M118 392H338"/>
+    <path d="M138 98C138 180 185 210 216 248C185 286 138 316 138 372"/>
+    <path d="M318 98C318 180 271 210 240 248C271 286 318 316 318 372"/>
+    <rect x="286" y="272" width="156" height="152" rx="28"/>
+    <path d="M286 322H442"/>
+    <path d="M326 252V298M400 252V298"/>
+  </g>
+  <g fill="#50DCFF">
+    <path d="M168 166H288L236 226H220Z"/>
+    <path d="M220 270H236L288 346H168Z"/>
+    <rect x="222" y="220" width="12" height="64" rx="6"/>
+    <rect x="314" y="346" width="28" height="28" rx="6"/>
+    <rect x="350" y="346" width="28" height="28" rx="6"/>
+    <rect x="386" y="346" width="28" height="28" rx="6"/>
+    <rect x="314" y="382" width="28" height="28" rx="6"/>
+    <rect x="350" y="382" width="28" height="28" rx="6"/>
+    <rect x="386" y="382" width="28" height="28" rx="6"/>
+  </g>
+</svg>
