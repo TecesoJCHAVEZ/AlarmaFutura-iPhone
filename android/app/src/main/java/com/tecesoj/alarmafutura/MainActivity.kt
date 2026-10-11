@@ -6,22 +6,29 @@ import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.pm.PackageManager
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import java.text.DateFormat
+import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
+import java.util.Locale
 
 class MainActivity : Activity() {
     private lateinit var nameInput: EditText
     private lateinit var selectedDateText: TextView
     private lateinit var alarmsContainer: LinearLayout
+    private lateinit var alarmCountText: TextView
     private lateinit var statusText: TextView
 
     private var selectedTimeMillis: Long =
@@ -40,23 +47,76 @@ class MainActivity : Activity() {
     }
 
     private fun buildUi(): ScrollView {
-        val scroll = ScrollView(this)
+        val scroll = ScrollView(this).apply {
+            setBackgroundColor(Color.rgb(247, 249, 252))
+        }
+
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(40, 48, 40, 48)
+            setPadding(dp(24), dp(28), dp(24), dp(40))
         }
+
+        root.addView(ImageView(this).apply {
+            setImageResource(R.drawable.alarma_futura_mark)
+            adjustViewBounds = true
+            scaleType = ImageView.ScaleType.CENTER_INSIDE
+            contentDescription = "Alarma Futura"
+        }, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            dp(112)
+        ))
 
         root.addView(TextView(this).apply {
             text = "Alarma Futura"
             textSize = 30f
             gravity = Gravity.CENTER
-            setPadding(0, 0, 0, 24)
+            setTextColor(Color.rgb(20, 36, 64))
+            setPadding(0, dp(4), 0, dp(4))
         })
 
         root.addView(TextView(this).apply {
-            text = "Programa una alarma para cualquier fecha y hora futuras."
-            textSize = 16f
-            setPadding(0, 0, 0, 20)
+            text = "Programa varias alarmas para hoy o para cualquier fecha futura."
+            textSize = 15f
+            gravity = Gravity.CENTER
+            setTextColor(Color.rgb(90, 102, 120))
+            setPadding(0, 0, 0, dp(10))
+        })
+
+        val byRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, dp(22))
+        }
+
+        byRow.addView(TextView(this).apply {
+            text = "by:"
+            textSize = 13f
+            setTextColor(Color.rgb(110, 120, 136))
+        })
+
+        byRow.addView(ImageView(this).apply {
+            setImageResource(R.drawable.omnarel_software_mark)
+            adjustViewBounds = true
+            scaleType = ImageView.ScaleType.CENTER_INSIDE
+            contentDescription = "OMNAREL Software"
+        }, LinearLayout.LayoutParams(dp(32), dp(32)).apply {
+            marginStart = dp(7)
+            marginEnd = dp(7)
+        })
+
+        byRow.addView(TextView(this).apply {
+            text = "OMNAREL Software"
+            textSize = 13f
+            setTextColor(Color.rgb(35, 55, 86))
+        })
+
+        root.addView(byRow)
+
+        root.addView(TextView(this).apply {
+            text = "Nueva alarma"
+            textSize = 21f
+            setTextColor(Color.rgb(20, 36, 64))
+            setPadding(0, 0, 0, dp(8))
         })
 
         nameInput = EditText(this).apply {
@@ -66,14 +126,27 @@ class MainActivity : Activity() {
         root.addView(nameInput)
 
         selectedDateText = TextView(this).apply {
-            textSize = 18f
-            setPadding(0, 28, 0, 12)
+            textSize = 17f
+            setTextColor(Color.rgb(35, 55, 86))
+            setPadding(0, dp(22), 0, dp(10))
         }
         root.addView(selectedDateText)
 
         root.addView(Button(this).apply {
-            text = "Elegir fecha y hora"
-            setOnClickListener { pickDateAndTime() }
+            text = "Elegir fecha"
+            setOnClickListener { pickDate() }
+        })
+
+        root.addView(Button(this).apply {
+            text = "Elegir hora"
+            setOnClickListener { pickTime() }
+        })
+
+        root.addView(TextView(this).apply {
+            text = "Puedes crear varias alarmas el mismo día. Para hoy, selecciona una hora y minutos posteriores al momento actual."
+            textSize = 13f
+            setTextColor(Color.rgb(100, 110, 126))
+            setPadding(0, dp(8), 0, dp(8))
         })
 
         root.addView(Button(this).apply {
@@ -82,19 +155,34 @@ class MainActivity : Activity() {
         })
 
         statusText = TextView(this).apply {
-            textSize = 15f
-            setPadding(0, 18, 0, 24)
+            textSize = 14f
+            setTextColor(Color.rgb(55, 80, 112))
+            setPadding(0, dp(14), 0, dp(24))
         }
         root.addView(statusText)
 
-        root.addView(TextView(this).apply {
+        val listHeader = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+
+        listHeader.addView(TextView(this).apply {
             text = "Alarmas programadas"
-            textSize = 22f
-            setPadding(0, 24, 0, 16)
-        })
+            textSize = 21f
+            setTextColor(Color.rgb(20, 36, 64))
+        }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+
+        alarmCountText = TextView(this).apply {
+            textSize = 15f
+            setTextColor(Color.rgb(100, 110, 126))
+        }
+        listHeader.addView(alarmCountText)
+
+        root.addView(listHeader)
 
         alarmsContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
+            setPadding(0, dp(12), 0, 0)
         }
         root.addView(alarmsContainer)
 
@@ -102,35 +190,68 @@ class MainActivity : Activity() {
         return scroll
     }
 
-    private fun pickDateAndTime() {
+    private fun pickDate() {
         val calendar = Calendar.getInstance().apply {
             timeInMillis = selectedTimeMillis
         }
 
-        DatePickerDialog(
+        val dialog = DatePickerDialog(
             this,
             { _, year, month, day ->
-                TimePickerDialog(
-                    this,
-                    { _, hour, minute ->
-                        calendar.set(Calendar.YEAR, year)
-                        calendar.set(Calendar.MONTH, month)
-                        calendar.set(Calendar.DAY_OF_MONTH, day)
-                        calendar.set(Calendar.HOUR_OF_DAY, hour)
-                        calendar.set(Calendar.MINUTE, minute)
-                        calendar.set(Calendar.SECOND, 0)
-                        calendar.set(Calendar.MILLISECOND, 0)
-                        selectedTimeMillis = calendar.timeInMillis
-                        updateSelectedDate()
-                    },
-                    calendar.get(Calendar.HOUR_OF_DAY),
-                    calendar.get(Calendar.MINUTE),
-                    false
-                ).show()
+                calendar.set(Calendar.YEAR, year)
+                calendar.set(Calendar.MONTH, month)
+                calendar.set(Calendar.DAY_OF_MONTH, day)
+
+                if (calendar.timeInMillis <= System.currentTimeMillis()) {
+                    val fallback = Calendar.getInstance().apply {
+                        add(Calendar.MINUTE, 5)
+                    }
+                    calendar.set(Calendar.HOUR_OF_DAY, fallback.get(Calendar.HOUR_OF_DAY))
+                    calendar.set(Calendar.MINUTE, fallback.get(Calendar.MINUTE))
+                }
+
+                selectedTimeMillis = calendar.timeInMillis
+                updateSelectedDate()
             },
             calendar.get(Calendar.YEAR),
             calendar.get(Calendar.MONTH),
             calendar.get(Calendar.DAY_OF_MONTH)
+        )
+
+        dialog.datePicker.minDate = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+
+        dialog.show()
+    }
+
+    private fun pickTime() {
+        val calendar = Calendar.getInstance().apply {
+            timeInMillis = selectedTimeMillis
+        }
+
+        TimePickerDialog(
+            this,
+            { _, hour, minute ->
+                calendar.set(Calendar.HOUR_OF_DAY, hour)
+                calendar.set(Calendar.MINUTE, minute)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                selectedTimeMillis = calendar.timeInMillis
+                updateSelectedDate()
+
+                if (selectedTimeMillis <= System.currentTimeMillis() + 30_000L) {
+                    statusText.text = "Para hoy, elige una hora y minutos posteriores al momento actual."
+                } else {
+                    statusText.text = ""
+                }
+            },
+            calendar.get(Calendar.HOUR_OF_DAY),
+            calendar.get(Calendar.MINUTE),
+            false
         ).show()
     }
 
@@ -142,7 +263,7 @@ class MainActivity : Activity() {
         }
 
         if (selectedTimeMillis <= System.currentTimeMillis() + 30_000L) {
-            statusText.text = "Selecciona una fecha y hora futuras."
+            statusText.text = "Para hoy, elige una hora y minutos posteriores al momento actual."
             return
         }
 
@@ -163,7 +284,7 @@ class MainActivity : Activity() {
         runCatching {
             AlarmScheduler.scheduleNew(this, label, selectedTimeMillis)
         }.onSuccess {
-            statusText.text = "Alarma programada."
+            statusText.text = "Alarma programada. Puedes agregar otra sin perder las anteriores."
             nameInput.text.clear()
             selectedTimeMillis = System.currentTimeMillis() + 5 * 60 * 1000L
             updateSelectedDate()
@@ -176,14 +297,18 @@ class MainActivity : Activity() {
     private fun refreshAlarmList() {
         if (!::alarmsContainer.isInitialized) return
 
+        AlarmStorage.pruneExpired(this)
         alarmsContainer.removeAllViews()
+
         val alarms = AlarmStorage.all(this)
-            .filter { it.triggerAtMillis > System.currentTimeMillis() }
+        alarmCountText.text = alarms.size.toString()
 
         if (alarms.isEmpty()) {
             alarmsContainer.addView(TextView(this).apply {
                 text = "No hay alarmas programadas."
                 textSize = 16f
+                setTextColor(Color.rgb(100, 110, 126))
+                setPadding(0, dp(10), 0, dp(10))
             })
             return
         }
@@ -191,17 +316,25 @@ class MainActivity : Activity() {
         alarms.forEach { alarm ->
             val block = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                setPadding(0, 12, 0, 22)
+                setPadding(dp(18), dp(14), dp(18), dp(14))
+                background = GradientDrawable().apply {
+                    setColor(Color.WHITE)
+                    cornerRadius = dp(16).toFloat()
+                    setStroke(dp(1), Color.rgb(224, 230, 238))
+                }
             }
 
             block.addView(TextView(this).apply {
                 text = alarm.label
                 textSize = 18f
+                setTextColor(Color.rgb(20, 36, 64))
             })
 
             block.addView(TextView(this).apply {
                 text = formatDate(alarm.triggerAtMillis)
                 textSize = 15f
+                setTextColor(Color.rgb(90, 102, 120))
+                setPadding(0, dp(4), 0, dp(8))
             })
 
             block.addView(Button(this).apply {
@@ -213,7 +346,15 @@ class MainActivity : Activity() {
                 }
             })
 
-            alarmsContainer.addView(block)
+            alarmsContainer.addView(
+                block,
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    bottomMargin = dp(10)
+                }
+            )
         }
     }
 
@@ -222,10 +363,23 @@ class MainActivity : Activity() {
     }
 
     private fun formatDate(timeMillis: Long): String {
-        return DateFormat.getDateTimeInstance(
-            DateFormat.MEDIUM,
-            DateFormat.SHORT
-        ).format(Date(timeMillis))
+        val target = Calendar.getInstance().apply { this.timeInMillis = timeMillis }
+        val now = Calendar.getInstance()
+
+        val sameDay =
+            target.get(Calendar.ERA) == now.get(Calendar.ERA) &&
+            target.get(Calendar.YEAR) == now.get(Calendar.YEAR) &&
+            target.get(Calendar.DAY_OF_YEAR) == now.get(Calendar.DAY_OF_YEAR)
+
+        return if (sameDay) {
+            val time = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(timeMillis))
+            "Hoy · $time"
+        } else {
+            DateFormat.getDateTimeInstance(
+                DateFormat.MEDIUM,
+                DateFormat.SHORT
+            ).format(Date(timeMillis))
+        }
     }
 
     private fun requestNotificationPermissionIfNeeded() {
@@ -239,6 +393,10 @@ class MainActivity : Activity() {
                 REQUEST_NOTIFICATIONS
             )
         }
+    }
+
+    private fun dp(value: Int): Int {
+        return (value * resources.displayMetrics.density).toInt()
     }
 
     companion object {

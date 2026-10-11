@@ -3,7 +3,6 @@ import AlarmKit
 import Foundation
 import SwiftUI
 
-// La app no necesita metadatos adicionales para mostrar una alarma sencilla.
 nonisolated struct EmptyAlarmMetadata: AlarmMetadata { }
 
 @MainActor
@@ -46,11 +45,9 @@ final class AlarmStore: ObservableObject {
 
         let attributes = AlarmAttributes<EmptyAlarmMetadata>(
             presentation: AlarmPresentation(alert: alert),
-            tintColor: .orange
+            tintColor: .blue
         )
 
-        // AlarmKit usa el sonido de alarma predeterminado del sistema cuando
-        // no se especifica un archivo de audio personalizado.
         let configuration = AlarmManager.AlarmConfiguration<EmptyAlarmMetadata>.alarm(
             schedule: .fixed(fireDate),
             attributes: attributes
@@ -105,7 +102,11 @@ final class AlarmStore: ObservableObject {
             return
         }
 
-        alarms = decoded.sorted { $0.fireDate < $1.fireDate }
+        alarms = decoded
+            .filter { $0.fireDate > Date() }
+            .sorted { $0.fireDate < $1.fireDate }
+
+        saveAlarms()
     }
 }
 
@@ -119,7 +120,7 @@ enum AlarmAppError: LocalizedError {
         case .missingName:
             return "Escribe un nombre para la alarma."
         case .dateMustBeInFuture:
-            return "Selecciona una fecha y hora futuras."
+            return "Para hoy, selecciona una hora y minutos posteriores al momento actual."
         case .authorizationDenied:
             return "El permiso para crear alarmas está desactivado. Actívalo en Ajustes."
         }

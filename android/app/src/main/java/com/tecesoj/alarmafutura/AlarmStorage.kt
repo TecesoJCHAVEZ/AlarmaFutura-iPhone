@@ -13,6 +13,7 @@ data class SavedAlarm(
 object AlarmStorage {
     private const val PREFS = "alarma_futura"
     private const val KEY = "saved_alarms"
+    private const val KEY_NEXT_ID = "next_alarm_id"
 
     fun all(context: Context): List<SavedAlarm> {
         val raw = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -33,6 +34,22 @@ object AlarmStorage {
         return result.sortedBy { it.triggerAtMillis }
     }
 
+    @Synchronized
+    fun nextId(context: Context): Int {
+        val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val storedNext = preferences.getInt(KEY_NEXT_ID, 1000)
+        val nextFromExisting = (all(context).maxOfOrNull { it.id } ?: 999) + 1
+        val next = maxOf(storedNext, nextFromExisting)
+
+        check(
+            preferences.edit().putInt(KEY_NEXT_ID, next + 1).commit()
+        ) {
+            "No fue posible reservar un identificador para la alarma."
+        }
+
+        return next
+    }
+
     fun upsert(context: Context, alarm: SavedAlarm) {
         val updated = all(context).filterNot { it.id == alarm.id }.toMutableList()
         updated += alarm
@@ -41,6 +58,11 @@ object AlarmStorage {
 
     fun remove(context: Context, id: Int) {
         save(context, all(context).filterNot { it.id == id })
+    }
+
+    fun pruneExpired(context: Context, nowMillis: Long = System.currentTimeMillis()) {
+        val future = all(context).filter { it.triggerAtMillis > nowMillis }
+        save(context, future)
     }
 
     private fun save(context: Context, alarms: List<SavedAlarm>) {

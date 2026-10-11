@@ -4,10 +4,9 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.provider.Settings
-import android.net.Uri
-import java.util.UUID
 
 object AlarmScheduler {
     fun hasExactAlarmAccess(context: Context): Boolean {
@@ -26,14 +25,14 @@ object AlarmScheduler {
     }
 
     fun scheduleNew(context: Context, label: String, triggerAtMillis: Long): SavedAlarm {
-        check(triggerAtMillis > System.currentTimeMillis()) {
-            "La fecha de la alarma debe estar en el futuro."
+        check(triggerAtMillis > System.currentTimeMillis() + 30_000L) {
+            "La fecha y hora de la alarma deben estar en el futuro."
         }
         check(hasExactAlarmAccess(context)) {
             "Android no ha autorizado alarmas exactas."
         }
 
-        val id = UUID.randomUUID().hashCode() and Int.MAX_VALUE
+        val id = AlarmStorage.nextId(context)
         val alarm = SavedAlarm(id, label, triggerAtMillis)
         schedule(context, alarm)
         AlarmStorage.upsert(context, alarm)

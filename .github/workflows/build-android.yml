@@ -3,7 +3,13 @@ name: Compilar Alarma Futura Android
 on:
   push:
     branches:
+      - main
       - android-port-v1
+      - feature/alarma-v1.1-ui-icons
+    paths:
+      - "android/**"
+      - ".github/workflows/build-android.yml"
+  pull_request:
     paths:
       - "android/**"
       - ".github/workflows/build-android.yml"
