@@ -1,14 +1,8 @@
 package com.tecesoj.alarmafutura
 
 import android.app.Activity
-import android.app.NotificationManager
-import android.content.Context
-import android.media.AudioAttributes
-import android.media.Ringtone
-import android.media.RingtoneManager
+import android.content.Intent
 import android.os.Bundle
-import android.os.VibrationEffect
-import android.os.Vibrator
 import android.view.Gravity
 import android.view.ViewGroup
 import android.view.WindowManager
@@ -17,9 +11,8 @@ import android.widget.LinearLayout
 import android.widget.TextView
 
 class AlarmRingingActivity : Activity() {
-    private var ringtone: Ringtone? = null
-    private var vibrator: Vibrator? = null
-    private var notificationId: Int = 0
+    private var alarmId: Int = 0
+    private var alarmLabel: String = "Alarma Futura"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,8 +24,12 @@ class AlarmRingingActivity : Activity() {
                 WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
         )
 
-        notificationId = intent.getIntExtra("alarm_id", 0)
-        val label = intent.getStringExtra("alarm_label").orEmpty().ifBlank { "Alarma Futura" }
+        alarmId = intent.getIntExtra("alarm_id", 0)
+        alarmLabel = intent.getStringExtra("alarm_label")
+            .orEmpty()
+            .ifBlank { "Alarma Futura" }
+
+        ensureAlarmServiceIsRunning()
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -45,13 +42,13 @@ class AlarmRingingActivity : Activity() {
         }
 
         root.addView(TextView(this).apply {
-            text = "ALARMА"
+            text = "ALARMA"
             textSize = 20f
             gravity = Gravity.CENTER
         })
 
         root.addView(TextView(this).apply {
-            text = label
+            text = alarmLabel
             textSize = 34f
             gravity = Gravity.CENTER
             setPadding(0, 32, 0, 48)
@@ -59,48 +56,36 @@ class AlarmRingingActivity : Activity() {
 
         root.addView(Button(this).apply {
             text = "Detener"
-            setOnClickListener { stopAlarmAndFinish() }
+            setOnClickListener {
+                stopAlarmAndFinish()
+            }
         })
 
         setContentView(root)
-        startAlarmSound()
     }
 
-    private fun startAlarmSound() {
-        val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-
-        ringtone = RingtoneManager.getRingtone(this, uri)?.apply {
-            audioAttributes = AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_ALARM)
-                .build()
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                isLooping = true
-            }
-            play()
+    private fun ensureAlarmServiceIsRunning() {
+        val serviceIntent = Intent(this, AlarmSoundService::class.java).apply {
+            action = AlarmSoundService.ACTION_START
+            putExtra(AlarmSoundService.EXTRA_ALARM_ID, alarmId)
+            putExtra(AlarmSoundService.EXTRA_ALARM_LABEL, alarmLabel)
         }
 
-        vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-        vibrator?.vibrate(
-            VibrationEffect.createWaveform(
-                longArrayOf(0, 700, 350, 700, 350),
-                0
-            )
-        )
+        runCatching {
+            startForegroundService(serviceIntent)
+        }
     }
 
     private fun stopAlarmAndFinish() {
-        ringtone?.stop()
-        vibrator?.cancel()
-        getSystemService(NotificationManager::class.java).cancel(notificationId)
-        finishAndRemoveTask()
-    }
-
-    override fun onDestroy() {
-        if (isFinishing) {
-            ringtone?.stop()
-            vibrator?.cancel()
+        val stopIntent = Intent(this, AlarmSoundService::class.java).apply {
+            action = AlarmSoundService.ACTION_STOP
+            putExtra(AlarmSoundService.EXTRA_ALARM_ID, alarmId)
         }
-        super.onDestroy()
+
+        runCatching {
+            startService(stopIntent)
+        }
+
+        finishAndRemoveTask()
     }
 }

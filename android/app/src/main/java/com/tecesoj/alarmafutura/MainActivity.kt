@@ -4,12 +4,16 @@ import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
 import android.app.DatePickerDialog
+import android.app.NotificationManager
 import android.app.TimePickerDialog
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.Button
@@ -30,6 +34,7 @@ class MainActivity : Activity() {
     private lateinit var alarmsContainer: LinearLayout
     private lateinit var alarmCountText: TextView
     private lateinit var statusText: TextView
+    private lateinit var fullScreenAccessButton: Button
 
     private var selectedTimeMillis: Long =
         System.currentTimeMillis() + 5 * 60 * 1000L
@@ -44,6 +49,7 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         refreshAlarmList()
+        updateFullScreenAccessState()
     }
 
     private fun buildUi(): ScrollView {
@@ -112,11 +118,19 @@ class MainActivity : Activity() {
 
         root.addView(byRow)
 
+        fullScreenAccessButton = Button(this).apply {
+            text = "Permitir alarma en pantalla completa"
+            setOnClickListener {
+                openFullScreenIntentSettings()
+            }
+        }
+        root.addView(fullScreenAccessButton)
+
         root.addView(TextView(this).apply {
             text = "Nueva alarma"
             textSize = 21f
             setTextColor(Color.rgb(20, 36, 64))
-            setPadding(0, 0, 0, dp(8))
+            setPadding(0, dp(18), 0, dp(8))
         })
 
         nameInput = EditText(this).apply {
@@ -284,7 +298,7 @@ class MainActivity : Activity() {
         runCatching {
             AlarmScheduler.scheduleNew(this, label, selectedTimeMillis)
         }.onSuccess {
-            statusText.text = "Alarma programada. Puedes agregar otra sin perder las anteriores."
+            statusText.text = "Alarma programada. Sonará de forma continua hasta que la detengas."
             nameInput.text.clear()
             selectedTimeMillis = System.currentTimeMillis() + 5 * 60 * 1000L
             updateSelectedDate()
@@ -392,6 +406,44 @@ class MainActivity : Activity() {
                 arrayOf(Manifest.permission.POST_NOTIFICATIONS),
                 REQUEST_NOTIFICATIONS
             )
+        }
+    }
+
+    private fun updateFullScreenAccessState() {
+        if (!::fullScreenAccessButton.isInitialized) return
+
+        fullScreenAccessButton.visibility =
+            if (canUseFullScreenIntent()) {
+                android.view.View.GONE
+            } else {
+                android.view.View.VISIBLE
+            }
+    }
+
+    private fun canUseFullScreenIntent(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            return true
+        }
+
+        val manager = getSystemService(NotificationManager::class.java)
+        return manager.canUseFullScreenIntent()
+    }
+
+    private fun openFullScreenIntentSettings() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            return
+        }
+
+        val intent = Intent(
+            Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT,
+            Uri.parse("package:$packageName")
+        )
+
+        runCatching {
+            startActivity(intent)
+        }.onFailure {
+            statusText.text =
+                "No se pudo abrir el ajuste de pantalla completa en este dispositivo."
         }
     }
 
