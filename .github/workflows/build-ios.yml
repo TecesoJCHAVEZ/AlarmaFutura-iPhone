@@ -1,9 +1,19 @@
 name: Compilar app iPhone
 
+# Evita usar minutos macOS cuando sólo cambia Android o documentación.
+# Las compilaciones manuales siguen disponibles en Actions.
 on:
   push:
     branches: [main]
+    paths:
+      - "AlarmaFutura/**"
+      - "scripts/**"
+      - ".github/workflows/build-ios.yml"
   pull_request:
+    paths:
+      - "AlarmaFutura/**"
+      - "scripts/**"
+      - ".github/workflows/build-ios.yml"
   workflow_dispatch:
 
 permissions:
